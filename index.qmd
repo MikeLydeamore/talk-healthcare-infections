@@ -1,0 +1,397 @@
+---
+title: "Data-driven insights into healthcare acquired infections: two case studies"
+author: Michael Lydeamore
+date: today
+format:
+    presentation-revealjs+letterbox:
+        fig-align: center
+---
+
+```{css}
+figcaption {
+    text-align: center;
+}
+
+.center {
+  text-align: center;
+}
+```
+
+```{r}
+#| label: load-packages
+
+library(knitr)
+library(ggplot2)
+library(conmat)
+library(dplyr)
+library(purrr)
+library(tidyr)
+library(mgcv)
+library(patchwork)
+```
+
+## Hello from Australia!
+
+::: {.columns}
+::: {.column width='50%'}
+* MUA Department of Econometrics and Business Statistics is the largest general statistics group in Victoria
+* Business Analytics is broad-ranging, including fisheries, data visualisation, extreme weather events, and more theory-based research.
+
+:::
+::: {.column width='50%'}
+![](images/monash-australia.png){fig-align="center"}
+:::
+:::
+
+## My roadmap {.smaller}
+
+* Bachelor of Mathematical Sciences at the University of Adelaide (completed 2012)
+* Masters of Philosophy at the University of Adelaide (completed 2015)
+* PhD at the University of Melbourne (completed 2019)
+* Joined Monash University in mid-2019
+* Including honorary position at the SaferCare Victoria, Department of Health & Human Services
+* Recruited into the COVID-19 response in late February/early March
+* Appointed “Modelling & Forecasting Lead” in late March
+* Appointed Manager of Analytics in September
+* Rejoined Monash in 2021, including the Doherty COVID-19 Modelling Consortium
+* Joined EBS in September 2021
+
+# Burden of Healthcare Acquired Infections in Australia
+
+Coauthors: Brett Mitchell, Tracey Bucknall, Allen Cheng, Phil Russo, Andrew Stewardson
+
+## Healthcare Associated Infections {.smaller}
+
+* Healthcare associated infections (HAIs) associated with increased morbidity and mortality
+* Five of the most common HAIs are:
+  * Clostridiodes difficile – causes severe damage to the colon, can be fatal
+  * Bloodstream infection (sepsis) – estimated mortality rate of 15-30%
+  * Urinary track infection – low mortality but associated with multi-drug resistance and significantly longer hospital stays
+  * Healthcare acquired pneumonia – mortality rate of 40-70%, increasing dramatically with age
+  * Surgical site infection – significantly increases length of stay
+
+::: {.fragment}
+In Australia, HAIs are not notifiable => We have no robust way to track whether their prevalence is increasing or decreasing
+:::
+
+## Europe tracks these closely
+
+HAIs are actively monitored across Europe through the ECDC
+
+* In 2016 (based on 2012 data), 2,609,911 new HAIs are estimated to have occurred.
+
+The data were obtained in a point prevalence survey on an enormous scale
+
+* 273, 753 patients
+* 1,149 hospitals
+
+## Point prevalence survey
+
+A point prevalence survey counts the number of people with a condition on a given day
+
+For the Australian PPS:
+
+* Adults in 19 large acute care public hospitals were sampled
+* All acute care wards were include, non-acute, paediatric, neonatal ICUs, rehab and emergency departments were excluded.
+
+The hospitals sampled make up approximately 60% of all overnight separations in Australia
+
+## Point prevalence survey
+
+* 2767 patients were sampled between 6 Aug and 29 Nov 2018
+* Median age: 67 (range 18-104)
+* 52.9% male, 46.6% female, 0.5% unknown/other
+* 85.7% patients in major city hospitals
+
+## Estimation methodology {.smaller}
+
+#### Step 1: Hospital prevalence
+
+Hospital prevalence, $P$, estimated as
+
+$$P = r \times Beta(n_{\text{obs}}, N-n_{\text{obs}}+1) + (1-r) \times Beta(n_{\text{obs}}+1, N-n_{\text{obs}})$$
+
+## Estimation methodology {.smaller}
+
+#### Step 2: Estimation of hospital incidence
+
+Hospital incidence, $I$, calculated as
+
+$$I = P \frac{\text{LA}}{\text{LOI}}$$
+
+where
+
+* $P$ is the hospital prevalence from step 1,
+* $\text{LA}$ is the mean length of stay and
+* $\text{LOI}$ is the length of infection.
+
+::: {.fragment}
+$\text{LA}$ is taken from the AIHW 2018 statistics on all public hospitals.
+:::
+
+## Estimation methodology {.smaller}
+
+#### Step 2a: Estimation of length of infection
+
+No data on length of infection, only $LOI_\text{pps}$, the length of stay until the date of survey.
+
+We can calculate
+
+
+$$P(LOI_\text{pps} = 1),$$
+
+the probability a patient is in the first day of their HAI. Then, approximate $LOI$ with
+
+$$E[LOI] = 1 / P(LOI_\text{pps} = 1).$$
+
+For small sample sizes, results has shown this is biased, so we use a mixture of this estimator and the empirical mean.
+
+## Estimation methodology {.smaller}
+
+#### Step 3: Estimation of population incidence
+
+Calculate population incidence as
+
+$$I_{\text{pop}} = I \times N_{\text{discharges}}.$$
+
+For us, $N_{\text{discharges}} = 3,713.513$, which is 60% of the total admissions in the year.
+
+::: {.fragment}
+This is one of the few pieces of data Australia has that the ECDC doesn't!
+:::
+
+## Estimation methodology {.smaller}
+
+#### Step 4: Stratification by age and sex
+
+Use a multinomial likelihood with a Dirichlet prior, with weights taken from the number of cases in each age/sex category.
+
+A psuedocount is added to each strata ($0.001\sum \text{weights}$) to ensure likelihood can be calculated with empty strata
+
+::: {.fragment}
+This psuedocount almost surely induces bias, and there are better techniques out there.
+:::
+
+## Estimation methodology
+
+#### Step 5: Adjustment for life expectancy
+
+Use the McCabe score, which gives the life expectancy according to severity of disease. Patients are categorised as:
+
+* non-fatal
+* fatal (life expectancy 3 years)
+* rapidly fatal (average life expectancy of 0.5 years)
+
+These scores, combined with disease outcome trees, give DALYs and deaths.
+
+## Disease outcome trees
+
+![](images/outcome-tree.png){fig-align="center"}
+
+## Key results {.smaller}
+
+::: {.r-stack}
+
+|         | Number of HAIs <br> (95% CI)         | Deaths <br> (95% CI)        | DALYs <br> (95% CI)             |
+| ------- | -------------------------------- | ----------------------- | --------------------------- |
+| **SSI** | 44,238 <br> (31,176 - 73,797)        | 876 <br> (617 - 1,263)      | 13,197 <br> (9,298 - 19,001)    |
+| **UTI** | 42,408 <br> (25,200 - 68,735)        | 729 <br> (259 - 1,772)      | 16,087 <br> (5,939 - 37,218)    |
+| **CDI** | 5,125 <br> (2,360 - 10,740)          | 262 <br> (13 - 836)         | 2,757 <br> (241 - 8,655)        |
+| **HAP** | 51,499 <br> (31,343 - 82,877)        | 1,904 <br> (462 - 4,430)    | 39,276 <br> (17,608 - 77,915)   |
+| **BSI** | 23,979 <br> (15,658 - 36,245)        | 3,512 <br> (1,874 - 6,075)  | 46,773 <br> (26,205 - 79,104)   |
+| **All** | **170,574** <br> (135,779 - 213,898) | 7,583 <br> (4,941 - 11,135) | 122,376 <br> (85,136 - 172,784) |
+
+::: {.fragment style="background-color: white; border: solid thick red; padding: 10px;"}
+That's 1 in 20 _admissions_ resulting in an avoidable infection!
+:::
+:::
+
+## Key results
+
+::: {.columns}
+::: {.column width='50%'}
+![](images/Figure1-cases_per_100k.png){fig-align="center"}
+
+:::
+::: {.column width='50%'}
+![](images/Figure4-dalys_per_100k.png){fig-align="center"}
+
+:::
+:::
+
+## Key results
+
+![](images/Figure2-cases_stratified_per_100k.png){fig-align="center"}
+
+## Key results
+
+![](images/Figure3-deaths_per_100k.png){fig-align="center"}
+
+## Novelty
+
+* First estimate of HAI burden in Australia using (relatively) robust survey data in an established framework
+* Based on first point prevalence survey since 1984
+
+* There is no routine surveillance of HAIs in Australia
+* Point prevalence surveys remain the only way to understand the burden of these conditions
+
+## Summary
+
+* 498 DALYs per 100,000 is a large amount
+    * Motor vehicles: 180 DALYs
+    * Infectious diseases: 370 DALYs
+    * Respiratory diseases: 1380 DALYs
+
+::: {.fragment}
+This work has informed guidance on HAI surveillance in Australia, including new funding schemes to better understand these conditions.
+:::
+
+::: {.fragment}
+And all this based on just 2767 patients from 19 hospitals...
+:::
+
+# HAIs are largely preventable.
+
+They represent great opportunity for improvement, and we have a long way to go to prevent them entirely.
+
+# Carbapenemase-producing enterobacterales colonisation status does not lead to more frequent admissions: a linked patient study {.smaller}
+
+D. Wu; T. Donker; B. Cooper; M. Easton; N. Geard; C. Gorrie; D. Hennessy; B. Howden; A. Peleg; A. Turner; A. Wilson; A. Stewardson on behalf of the ECHIDNA study group
+
+## Carbapenemase-producing Enterobacterales {.smaller}
+
+* Gram-negative bacilli occurring naturally in the GI tract
+* Resistant to carbapenem antibiotics
+* Several different carbapenemases genes in CPE:
+  * Imipenemase (IMP)
+  *  Klebsiella penumoniae carbapenemase (KPC)
+  *  New-Delhi metallo-β-lactamase (NDM)
+  * Verona integron-encoded metallo-β-lactamase (VIM) and
+  *  Oxacillinases (OXA)
+*  For Enterobacterales, IMP(-4) most commonly found in Victoria (28% of all cases)
+* Assumed to be colonised indefinitely
+
+## Carbapenemase-producing Enterobacterales {.smaller}
+
+* Surveillance officially established in Victoria in 2015, became notifiable in 2018
+* Since becoming notifiable, notifications have been steadily increasing
+
+![](images/figure1-incidence.png){fig-align="center"}
+
+## Modelling possible control
+
+::: {.columns}
+::: {.column width='50%'}
+
+* We know that healthcare is a network phenomenon
+* Need to understand if CPE+ patients are different to CPE- patients
+
+:::
+::: {.column width='50%'}
+![](images/echidna-network.png){fig-align="center"}
+:::
+:::
+
+## Research questions
+
+1. How frequently are CPE+ patients admitted to a health service other than the one they are diagnosed?
+2. Are patients known to be colonized with CPE admitted more often or to more locations than a random patient?
+
+## Health Services in Victoria, Australia {.smaller}
+
+* Health services are individually governed
+* Centralised guidelines for reporitng
+* Have their own IP results, testing/screening requirements, admission & transfer patterns
+* Are often spread across multiple campuses which operate independently but are administered centrally
+
+::: {.fragment}
+As these services tend to operate on the same patient data platform, we assume that previously diagnosed patients will have infection prevention protocols in place if they are re-admitted to the same service.
+
+This is less likely to be true in a different health service, as there is no centralised notification system to other health services.
+
+:::
+
+## Notification system
+
+![](images/echidna-notification-letter.png){fig-align="center"}
+
+## Data sources {.smaller}
+
+Victorian Admitted Episodes Dataset (VAED):
+
+* Line list of every hospital admission (public and private)
+* Reports demographics, conditions, treatments, timing, location
+
+Public Health Event Surveillance System (PHESS):
+
+* Records information on *notifiable* disease events
+* Includes patient demographics, date of notification, date of test
+* Operational system, used for contact tracing and outbreak analytics
+
+## Control Population {.smaller}
+
+To fairly compare between CPE+ and CPE- patients, construct a series of comparator populations which increasingly closely approximate the CPE+ cohort
+
+1. Random subset: patients are randomly sampled from the population
+2. Campus and time: Patients are matched to CPE-positive patients based on the hospital campus and the quarter-year (i.e. 3-month period) of admission
+3. Campus, time and age: As per Cohort 2, plus the inclusion of five-year age band
+4. Campus, time and comorbidities: As per Cohort 2, plus the inclusion of age-adjusted Charlson Comorbidity Index category.
+
+## Survival Analysis {.smaller}
+
+Use the Kaplan-Meier estimator:
+
+$$\hat{S}(t) = \prod_{i:t_i \leq t} 1 - \frac{d_i}{n_i}$$
+
+where
+
+* $d_i$ is the number of events that have happened up to time $t_i$, and
+* $n_i$ is the number of individuals _known to have survived_ up to time $t_i$.
+
+## Statistical methodology {.smaller}
+
+To calcualte the time until next admission, we set the time 0 to be the time of discharge from a health service where CPE was diagnosed
+
+![](images/methods-1.png){fig-align="center"}
+
+## Statistical methodology {.smaller}
+
+Time of event is defined to be the time at which a patient was readmitted to a new health service
+Time of censoring is either death (if known) or the end of the data (30 November 2019), meaning patients have unequal study lengths.
+
+![](images/methods-2.png){fig-align="center"}
+
+## Admission Frequency
+
+![](images/survival-frequency.png){fig-align="center"}
+
+## Admission Location
+
+![](images/survival-sankey.png){fig-align="center"}
+
+## Admission Timing
+
+![](images/survival-survival.png){fig-align="center"}
+
+## Conclusion
+
+* Healthcare is a network problem, patients move very frequently
+* This is true independent of CPE colonisation status
+* Those who are CPE+ seem to be re-admitted faster on average
+  * Are they sicker people?
+  * Do they need more frequent follow up close to home?
+* Design of control schemes need to consider the linked nature of health services
+
+## Other ongoing work {.smaller}
+
+* Estimating rates of contact in the absence of local data, `conmat`
+* Understanding how non-linear dimension reduction warps your data
+* Predicting extreme weather events using short- and long-term climate drivers
+* Approximating patient movement patterns with piecewise constant networks
+* Developing non-network based network layout algorithms
+
+...and more.
+
+::: {.fragment}
+If your work is broadly related to infectious diseases, or biosciences, I would love to talk more.
+:::
