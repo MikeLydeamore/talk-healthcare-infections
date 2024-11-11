@@ -384,11 +384,18 @@ Time of censoring is either death (if known) or the end of the data (30 November
 
 ## Other ongoing work {.smaller}
 
-* Estimating rates of contact in the absence of local data, `conmat`
-* Understanding how non-linear dimension reduction warps your data
-* Predicting extreme weather events using short- and long-term climate drivers
-* Approximating patient movement patterns with piecewise constant networks
-* Developing non-network based network layout algorithms
+* Machine learning methods to identify risk factors for hospital infections  
+**Leong Zhuan Kee, Vis; Ewilly Liew**  
+* Estimating rates of contact in the absence of local data, `conmat`   
+**Nick Tierney; Nick Golding**  
+* Understanding how non-linear dimension reduction warps your data  
+**Jayani Lakshika; Di Cook**
+* Predicting extreme weather events using short- and long-term climate drivers  
+**Kate Saunders; Jarryd Chapman**
+* Approximating patient movement patterns with piecewise constant networks  
+**David Wu; Andrew Stewardson**  
+* Developing non-network based network layout algorithms  
+**Krisanat Anukarnsakulchularp; Di Cook**  
 
 ...and more.
 
