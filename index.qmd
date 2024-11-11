@@ -3,7 +3,7 @@ title: "Data-driven insights into healthcare acquired infections: two case studi
 author: Michael Lydeamore
 date: today
 format:
-    presentation-revealjs+letterbox:
+    presentation-revealjs:
         fig-align: center
 ---
 
